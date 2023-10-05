@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = [
+	"volatus",
+	"test-client",
+]
+
+[workspace.dependencies]
+axum = "0.6.20"
+oauth2 = "4.4.2"
+openidconnect = "3.3.1"
+tokio = { version = "1.32.0", features = ["rt-multi-thread", "macros"] }
+toml = "0.8.2"
+serde = "1"
+serde_json = "1.0"
+reqwest = { version = "0.11.22", features = ["json"] }
