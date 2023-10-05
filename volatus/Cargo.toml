@@ -9,5 +9,7 @@ edition = "2021"
 axum = { workspace = true }
 oauth2 = { workspace = true }
 openidconnect = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio = { workspace = true }
+serde = { workspace = true }
 toml = { workspace = true }
+reqwest = { workspace = true }

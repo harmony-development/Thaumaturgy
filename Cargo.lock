@@ -1974,6 +1974,8 @@ dependencies = [
  "axum",
  "oauth2",
  "openidconnect",
+ "reqwest",
+ "serde",
  "tokio",
  "toml",
 ]

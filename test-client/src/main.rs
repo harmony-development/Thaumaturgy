@@ -1,8 +1,10 @@
-use oauth2::{ClientId, PkceCodeChallenge, CsrfToken, AuthorizationCode, Scope};
+use std::io;
+
+use oauth2::{ClientId, PkceCodeChallenge, CsrfToken, AuthorizationCode, Scope, RedirectUrl};
 use openidconnect::{core::{CoreProviderMetadata, CoreClient, CoreAuthenticationFlow}, IssuerUrl, reqwest::async_http_client, Nonce, TokenResponse, AccessTokenHash};
 use serde::{Deserialize};
 
-const SERVER: &str = "https://blackquill.cc/.well-known/harmony-homeserver";
+// const SERVER: &str = "https://blackquill.cc/.well-known/harmony-homeserver";
 
 #[derive(Deserialize)]
 struct HarmonyHomeserverWellKnown {
@@ -11,16 +13,17 @@ struct HarmonyHomeserverWellKnown {
 
 #[tokio::main]
 async fn main() {
-    let res = reqwest::get(SERVER)
-        .await
-        .unwrap()
-        .json::<HarmonyHomeserverWellKnown>()
-        .await
-        .unwrap();
+    // let res = reqwest::get(SERVER)
+    //     .await
+    //     .unwrap()
+    //     .json::<HarmonyHomeserverWellKnown>()
+    //     .await
+    //     .unwrap();
+    let local_url: String = todo!("spin up localhost server to receive the redirect");
 
     let provider_metadata =
         CoreProviderMetadata::discover_async(
-            IssuerUrl::new(res.issuer.clone()).unwrap(),
+            IssuerUrl::new("https://ldap.toki.club/oauth2/openid/harmony".to_string()).unwrap(),
             async_http_client
         )
         .await
@@ -29,9 +32,10 @@ async fn main() {
     let client =
         CoreClient::from_provider_metadata(
             provider_metadata,
-            ClientId::new("some_random_key".to_string()),
+            ClientId::new("harmony".to_string()),
             None
-        );
+        )
+        .set_redirect_uri(RedirectUrl::new(local_url).unwrap());
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
 
@@ -43,15 +47,17 @@ async fn main() {
                 Nonce::new_random,
             )
             .add_scope(Scope::new("openid".to_string()))
-            .add_scope(Scope::new("urn:harmony:*".to_string()))
+            // .add_scope(Scope::new("urn:harmony:*".to_string()))
             .set_pkce_challenge(pkce_challenge)
             .url();
 
     println!("Browse to: {}", auth_url);
 
+    let (state, code): (String, String) = todo!("receive from localhost server");
+
     let token_response =
         client
-            .exchange_code(AuthorizationCode::new("todo: read this from input".to_string()))
+            .exchange_code(AuthorizationCode::new(code))
             .set_pkce_verifier(pkce_verifier)
             .request_async(async_http_client)
             .await
