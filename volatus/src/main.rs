@@ -1,15 +1,25 @@
 use std::time::Duration;
 use axum::{
     routing::{get, on, MethodFilter, post},
-    Router, body::HttpBody, response::IntoResponse, Json,
+    Router, body::HttpBody, response::IntoResponse, Json, extract::{State, FromRef},
 };
 use oauth2::{AuthUrl, TokenUrl, Scope};
-use openidconnect::{core::{CoreProviderMetadata, CoreResponseType, CoreSubjectIdentifierType, CoreJwsSigningAlgorithm, CoreClaimName, CoreClaimType, CoreResponseMode, CoreGrantType, CoreClientAuthMethod}, IssuerUrl, JsonWebKeySetUrl, ResponseTypes, EmptyAdditionalProviderMetadata, UserInfoUrl};
+use openidconnect::{core::{CoreProviderMetadata, CoreResponseType, CoreSubjectIdentifierType, CoreJwsSigningAlgorithm, CoreClaimName, CoreClaimType, CoreResponseMode, CoreGrantType, CoreClientAuthMethod, CoreJsonWebKeySet}, IssuerUrl, JsonWebKeySetUrl, ResponseTypes, EmptyAdditionalProviderMetadata, UserInfoUrl};
 use tower_http::cors::{CorsLayer, Any};
 use reqwest::header::{AUTHORIZATION, ACCEPT, ACCEPT_LANGUAGE, CONTENT_LANGUAGE, CONTENT_TYPE};
 
-async fn json_web_key_set() -> impl IntoResponse {
-    todo!("json_web_key_set");
+#[derive(Clone)]
+struct Key {
+}
+
+#[derive(Clone)]
+struct Keys {
+    keys: Vec<Key>,
+}
+
+async fn json_web_key_set(State(keys): State<Keys>) -> impl IntoResponse {
+    let jwks = CoreJsonWebKeySet::new(keys.keys.into_iter().map(|_x| todo!("convert a key into this")).collect());
+    Json(jwks)
 }
 async fn openid_token_endpoint() -> impl IntoResponse {
     todo!("openid_token_endpoint");
@@ -84,6 +94,7 @@ async fn openid_configuration() -> impl IntoResponse {
 
 fn oauth2_router<S, B>() -> Router<S, B>
 where
+    Keys: FromRef<S>,
     B: HttpBody + Send + 'static,
     S: Clone + Send + Sync + 'static,
 {
@@ -126,9 +137,21 @@ where
         )
 }
 
+#[derive(Clone)]
+struct AppState {
+    keys: Keys,
+}
+
+impl FromRef<AppState> for Keys {
+    fn from_ref(app_state: &AppState) -> Keys {
+        app_state.keys.clone()
+    }
+}
+
 #[tokio::main]
 async fn main() {
-    let oauth2_routes = oauth2_router();
+    let state = AppState { keys: Keys { keys: vec![] } };
+    let oauth2_routes = oauth2_router().with_state(state);
 
     axum::Server::bind(&"0.0.0.0:5982".parse().unwrap())
         .serve(oauth2_routes.into_make_service())
