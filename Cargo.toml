@@ -14,6 +14,16 @@ toml = "0.8.2"
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["cors"] }
 serde = "1"
-serde_json = "1.0"
+serde_json = "1"
+serde_plain = "1"
 rand = "0.8.5"
 reqwest = { version = "0.11.22", features = ["json"] }
+
+# all the crypto stuff
+pem-rfc7468 = "0.7.0"
+rsa = "0.9.2"
+pkcs8 = "0.10.2"
+pkcs1 = "0.7.5"
+rand_chacha = "0.3.1"
+sha2 = "0.10.8"
+dyn-clone = "1.0.14"

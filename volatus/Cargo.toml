@@ -12,7 +12,18 @@ openidconnect = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+serde_plain = { workspace = true }
 toml = { workspace = true }
 reqwest = { workspace = true }
 tower-http = { workspace = true }
 tower = { workspace = true }
+rand = { workspace = true }
+
+# crypto stuff
+pem-rfc7468 = { workspace = true }
+rsa = { workspace = true }
+pkcs8 = { workspace = true }
+pkcs1 = { workspace = true }
+rand_chacha = { workspace = true }
+sha2 = { workspace = true }
+dyn-clone = { workspace = true }

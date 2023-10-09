@@ -3,22 +3,20 @@ use axum::{
     routing::{get, on, MethodFilter, post},
     Router, body::HttpBody, response::IntoResponse, Json, extract::{State, FromRef},
 };
+use config::KeyConfig;
+use keys::KeySet;
 use oauth2::{AuthUrl, TokenUrl, Scope};
 use openidconnect::{core::{CoreProviderMetadata, CoreResponseType, CoreSubjectIdentifierType, CoreJwsSigningAlgorithm, CoreClaimName, CoreClaimType, CoreResponseMode, CoreGrantType, CoreClientAuthMethod, CoreJsonWebKeySet}, IssuerUrl, JsonWebKeySetUrl, ResponseTypes, EmptyAdditionalProviderMetadata, UserInfoUrl};
 use tower_http::cors::{CorsLayer, Any};
+use rand_chacha::ChaCha20Rng;
+use rand::SeedableRng;
 use reqwest::header::{AUTHORIZATION, ACCEPT, ACCEPT_LANGUAGE, CONTENT_LANGUAGE, CONTENT_TYPE};
 
-#[derive(Clone)]
-struct Key {
-}
+mod config;
+mod keys;
 
-#[derive(Clone)]
-struct Keys {
-    keys: Vec<Key>,
-}
-
-async fn json_web_key_set(State(keys): State<Keys>) -> impl IntoResponse {
-    let jwks = CoreJsonWebKeySet::new(keys.keys.into_iter().map(|_x| todo!("convert a key into this")).collect());
+async fn json_web_key_set(State(keys): State<keys::KeySet>) -> impl IntoResponse {
+    let jwks: CoreJsonWebKeySet = keys.into();
     Json(jwks)
 }
 async fn openid_token_endpoint() -> impl IntoResponse {
@@ -94,7 +92,7 @@ async fn openid_configuration() -> impl IntoResponse {
 
 fn oauth2_router<S, B>() -> Router<S, B>
 where
-    Keys: FromRef<S>,
+    KeySet: FromRef<S>,
     B: HttpBody + Send + 'static,
     S: Clone + Send + Sync + 'static,
 {
@@ -139,18 +137,21 @@ where
 
 #[derive(Clone)]
 struct AppState {
-    keys: Keys,
+    keys: KeySet,
 }
 
-impl FromRef<AppState> for Keys {
-    fn from_ref(app_state: &AppState) -> Keys {
+impl FromRef<AppState> for KeySet {
+    fn from_ref(app_state: &AppState) -> KeySet {
         app_state.keys.clone()
     }
 }
 
 #[tokio::main]
 async fn main() {
-    let state = AppState { keys: Keys { keys: vec![] } };
+    let rng = ChaCha20Rng::from_entropy();
+    let key_config = KeyConfig::generate(rng.clone());
+    let key_set = key_config.into_key_set(rng);
+    let state = AppState { keys: key_set };
     let oauth2_routes = oauth2_router().with_state(state);
 
     axum::Server::bind(&"0.0.0.0:5982".parse().unwrap())
